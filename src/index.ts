@@ -8,10 +8,18 @@ const cli = yargs(hideBin(process.argv))
     return yargs.command(
       'branch',
       'Clean branches',
-      () => {},
-      (_argv) => {
+      (args) => {
+        return args.options('merged', {
+          alias: 'm',
+          type: 'array',
+          description: 'Only show merged target branches',
+        })
+      },
+      (argv) => {
         import('./clean').then((module) => {
-          module.cleanBranches({ old: true, days: 0 })
+          module.cleanBranches({
+            merged: argv.merged as string[],
+          })
         })
       },
     )

@@ -1,49 +1,79 @@
 import type { BranchSummaryBranch } from 'simple-git'
 import consola from 'consola'
+import { colors } from 'consola/utils'
+import { formatDate } from 'date-fns'
+import prompts from 'prompts'
+
 import { git } from './env'
+
+const defaultCleanBranchesOptions = {
+  old: true,
+  days: 0,
+  merged: [],
+}
 
 /**
  * 清除分支
  */
 export async function cleanBranches(options: {
   /**
-   * 旧分支
-   */
-  old: boolean
-  /**
    * 多少天前
+   * @default 0
    */
-  days: number
-} = {
-  old: true,
-  days: 0,
-}): Promise<void> {
+  days?: number
+  /**
+   * 是否合并到目标分支
+   * @example clean branch -m master
+   * @example clean branch -m main -m master
+   */
+  merged?: string[]
+} = defaultCleanBranchesOptions): Promise<void> {
+  options = {
+    ...defaultCleanBranchesOptions,
+    ...options,
+  }
+
   const branchSummary = await git.branchLocal()
 
-  const currentDate = new Date()
-  const nDaysAgo = new Date()
-  nDaysAgo.setDate(currentDate.getDate() - options.days)
+  const currentDate = (new Date()).valueOf()
+  const nDaysAgo = currentDate - (options.days || 0) * 24 * 60 * 60 * 1000
 
   // console.log('branches', branches)
 
-  const oldBranches: (BranchSummaryBranch & {
+  let oldBranches: (BranchSummaryBranch & {
     lastCommitDate: Date
   })[] = []
-  // Object.keys(branchSummary.branches).forEach((branch) => )
+
+  const mergedBranches: string[] = []
+  console.log('options.merged', options.merged)
+  if (options.merged?.length) {
+    for (const branch of options.merged) {
+      try {
+        const mBranches = (await git.raw(['branch', '--merged', branch]))
+          .split('\n')
+          .map(b => b.trim())
+          .filter(b => !!b && !b.startsWith('*'))
+        mergedBranches.push(...mBranches)
+      }
+      // eslint-disable-next-line unused-imports/no-unused-vars
+      catch (_e: any) {
+        // ignore error target branches
+      }
+    }
+  }
+
   for (const branch in branchSummary.branches) {
-    console.log('branch', branch)
     if (branch === branchSummary.current)
-      return
+      continue
 
     // 获取分支的最后提交日期
     const log = await git.log({ from: branch })
     const latestCommit = log.latest
-    console.log('latestCommit', latestCommit)
     if (latestCommit) {
       const lastCommitDate = new Date(latestCommit.date)
 
-      // 如果分支的最后提交日期早于 30 天前，删除该分支
-      if (lastCommitDate < nDaysAgo) {
+      // 如果分支的最后提交日期早于 n 天前，删除该分支
+      if (lastCommitDate.valueOf() < nDaysAgo) {
         oldBranches.push({
           ...branchSummary.branches[branch],
           lastCommitDate,
@@ -52,64 +82,29 @@ export async function cleanBranches(options: {
     }
   }
 
-  const branchOptions = oldBranches.map(branch => ({
-    label: `${branch.name} ${branch.lastCommitDate}`,
+  // 最新日期在前
+  oldBranches.sort((a, b) => a.lastCommitDate.valueOf() - b.lastCommitDate.valueOf())
+  // filter by mergedBranches
+  oldBranches = oldBranches.filter(branch => options.merged?.length ? mergedBranches.includes(branch.name) : true)
+
+  const branchOptions: prompts.Choice[] = oldBranches.map(branch => ({
+    // 带有时区
+    title: `${colors.cyan(branch.name)}`,
     value: branch.name,
-    hint: branch.commit,
+    description: `${colors.yellow(branch.commit)} (${formatDate(branch.lastCommitDate, 'yyyy-MM-dd HH:mm:ss xxx')})`,
+    selected: true,
   }))
 
-  const selectedOptions = await consola.prompt('xxx', {
+  const results = await prompts({
+    instructions: false,
     type: 'multiselect',
-    options: branchOptions,
+    name: 'deletedBranches',
+    message: 'Delete Branches?',
+    choices: branchOptions,
   })
 
-  console.log('selectedOptions', selectedOptions)
-
-  // const oldBranches = branches.all.filter((branch) => {
-  //   // 跳过当前分支
-  //   if (branch === branches.current) {
-  //     return false
-  //   }
-
-  //   // 获取分支的最后提交日期
-  //   const log = git.log({ from: branch, to: branch })
-  //   if (log.latest) {
-  //     const lastCommitDate = new Date(log.latest.date)
-
-  //     // 如果分支的最后提交日期早于 30 天前，删除该分支
-  //     return lastCommitDate < nDaysAgo
-  //   }
-  // })
-
-  // branches.all.forEach((branch) => {
-  //   // 跳过当前分支
-  //   if (branch === branches.current) {
-  //     return
-  //   }
-
-  //   // 获取分支的最后提交日期
-  //   git.log({ from: branch, to: branch }, (err, log) => {
-  //     if (err) {
-  //       console.error(`Error fetching log for branch ${branch}:`, err)
-  //       return
-  //     }
-
-  //     if (log.latest) {
-  //       const lastCommitDate = new Date(log.latest.date)
-
-  //       // 如果分支的最后提交日期早于 30 天前，删除该分支
-  //       if (lastCommitDate < nDaysAgo) {
-  //         git.deleteLocalBranch(branch, true, (err) => {
-  //           if (err) {
-  //             consola.error(`Error deleting branch ${branch}:`, err)
-  //           }
-  //           else {
-  //             consola.info(`Deleted branch ${branch}`)
-  //           }
-  //         })
-  //       }
-  //     }
-  //   })
-  // })
-  console.log(res)
+  for (const branch of results.deletedBranches) {
+    await git.deleteLocalBranch(branch, true)
+    consola.success(`Deleted branch ${branch}`)
+  }
 }
