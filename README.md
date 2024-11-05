@@ -6,7 +6,7 @@
 [![JSDocs][jsdocs-src]][jsdocs-href]
 [![License][license-src]][license-href]
 
-Some quick actions for git.
+Some quick **interactive** actions for git.
 
 > Its name inspired by `code-geass`.
 
