@@ -7,7 +7,6 @@ import prompts from 'prompts'
 import { git } from './env'
 
 const defaultCleanBranchesOptions = {
-  old: true,
   days: 0,
   merged: [],
 }
@@ -45,7 +44,6 @@ export async function cleanBranches(options: {
   })[] = []
 
   const mergedBranches: string[] = []
-  console.log('options.merged', options.merged)
   if (options.merged?.length) {
     for (const branch of options.merged) {
       try {
@@ -87,6 +85,11 @@ export async function cleanBranches(options: {
   // filter by mergedBranches
   oldBranches = oldBranches.filter(branch => options.merged?.length ? mergedBranches.includes(branch.name) : true)
 
+  if (!oldBranches.length) {
+    consola.success('No branches need to be deleted.')
+    return
+  }
+
   const branchOptions: prompts.Choice[] = oldBranches.map(branch => ({
     // 带有时区
     title: `${colors.cyan(branch.name)}`,
@@ -99,12 +102,12 @@ export async function cleanBranches(options: {
     instructions: false,
     type: 'multiselect',
     name: 'deletedBranches',
-    message: 'Delete Branches?',
+    message: `Delete ${options.merged?.length ? 'merged' : ''} Branches?`,
     choices: branchOptions,
   })
 
   for (const branch of results.deletedBranches) {
-    await git.deleteLocalBranch(branch, true)
-    consola.success(`Deleted branch ${branch}`)
+    const data = await git.deleteLocalBranch(branch, true)
+    consola.success(`${colors.cyan(branch)}(${colors.yellow(data.hash || '')}) deleted.`)
   }
 }

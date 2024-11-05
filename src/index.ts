@@ -9,15 +9,22 @@ const cli = yargs(hideBin(process.argv))
       'branch',
       'Clean branches',
       (args) => {
-        return args.options('merged', {
-          alias: 'm',
-          type: 'array',
-          description: 'Only show merged target branches',
-        })
+        return args
+          .options('days', {
+            alias: 'd',
+            type: 'number',
+            description: 'Days ago',
+          })
+          .options('merged', {
+            alias: 'm',
+            type: 'array',
+            description: 'Only show merged target branches',
+          })
       },
       (argv) => {
         import('./clean').then((module) => {
           module.cleanBranches({
+            days: argv.days as number,
             merged: argv.merged as string[],
           })
         })
