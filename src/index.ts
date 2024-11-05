@@ -2,8 +2,14 @@ import process from 'node:process'
 import yargs from 'yargs'
 
 import { hideBin } from 'yargs/helpers'
+import { version } from '../package.json'
 
 const cli = yargs(hideBin(process.argv))
+  .scriptName('gitg')
+  .usage('$0 [args]')
+  .version(version)
+  .alias('h', 'help')
+  .alias('v', 'version')
   .command('clean', 'clean old branches', (yargs) => {
     return yargs.command(
       'branch',

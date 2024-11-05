@@ -2,8 +2,12 @@
 
 Some quick actions for git.
 
+> Its name inspired by `code-geass`.
+
 ```bash
-# git-geass
+# git-geass help
+gitg -h
+git-geass -h
 
 # clean branch
 gitg clean branch

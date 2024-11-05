@@ -104,10 +104,17 @@ export async function cleanBranches(options: {
     name: 'deletedBranches',
     message: `Delete ${options.merged?.length ? 'merged' : ''} Branches?`,
     choices: branchOptions,
+  }, {
+    onCancel: () => {
+      // consola.warn('用户取消操作')
+      consola.warn('User canceled.')
+    },
   })
 
-  for (const branch of results.deletedBranches) {
-    const data = await git.deleteLocalBranch(branch, true)
-    consola.success(`${colors.cyan(branch)}(${colors.yellow(data.hash || '')}) deleted.`)
+  if (results.deletedBranches) {
+    for (const branch of results.deletedBranches) {
+      const data = await git.deleteLocalBranch(branch, true)
+      consola.success(`${colors.cyan(branch)}(${colors.yellow(data.hash || '')}) deleted.`)
+    }
   }
 }
