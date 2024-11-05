@@ -102,7 +102,7 @@ export async function cleanBranches(options: {
     instructions: false,
     type: 'multiselect',
     name: 'deletedBranches',
-    message: `Delete ${options.merged?.length ? 'merged' : ''} Branches?`,
+    message: `Delete ${options.merged?.length ? 'merged' : 'old'} Branches?`,
     choices: branchOptions,
   }, {
     onCancel: () => {
