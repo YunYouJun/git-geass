@@ -45,7 +45,7 @@ gitg clean branch -m master -m main
 
 ## License
 
-[MIT](LICENSE) [@YunYouJun](https://github.com/YunYouJun)
+[MIT](./LICENSE) LICENSE @2024-PRESENT [@YunYouJun](https://github.com/YunYouJun)
 
 <!-- Badges -->
 
@@ -55,7 +55,7 @@ gitg clean branch -m master -m main
 [npm-downloads-href]: https://npmjs.com/package/git-geass
 [bundle-src]: https://img.shields.io/bundlephobia/minzip/git-geass?style=flat&colorA=080f12&colorB=1fa669&label=minzip
 [bundle-href]: https://bundlephobia.com/result?p=git-geass
-[license-src]: https://img.shields.io/github/license/antfu/git-geass.svg?style=flat&colorA=080f12&colorB=1fa669
-[license-href]: https://github.com/antfu/git-geass/blob/main/LICENSE
+[license-src]: https://img.shields.io/github/license/YunYouJun/git-geass.svg?style=flat&colorA=080f12&colorB=1fa669
+[license-href]: https://github.com/YunYouJun/git-geass/blob/main/LICENSE
 [jsdocs-src]: https://img.shields.io/badge/jsdocs-reference-080f12?style=flat&colorA=080f12&colorB=1fa669
 [jsdocs-href]: https://www.jsdocs.io/package/git-geass
