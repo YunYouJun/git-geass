@@ -155,7 +155,8 @@ export async function cleanBranches(options: {
         const remoteBranch = branch.replace(`${remoteName}/`, '')
         const data = (await git.push([remoteName, '--delete', remoteBranch]))
         consola.success(`Remote branch ${colors.dim(`${remoteName}/`)}${colors.cyan(remoteBranch)} deleted.`)
-        consola.info(data.remoteMessages.all.join('\n'))
+        if (data.remoteMessages.all.length)
+          consola.info(data.remoteMessages.all.join('\n'))
       }
       else {
         const data = await git.deleteLocalBranch(branch, true)

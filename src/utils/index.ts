@@ -48,6 +48,7 @@ export async function getRemoteBranches(): Promise<BranchInfo[]> {
     // 过滤默认分支
     .filter(item => item !== `origin/${GitGeass.defaultBranch}`)
 
+  const remoteBranchText = `Remote branch ${colors.green(GitGeass.defaultBranch)}${colors.gray('(default)')} is ignored.`
   let branchInfoArr: BranchInfo[] = []
   if (branches.length) {
     // bar.start(branches.length, 0)
@@ -71,16 +72,13 @@ export async function getRemoteBranches(): Promise<BranchInfo[]> {
     })
 
     spinner.succeed(`Remote ${colors.gray('branches info loaded.')}`)
+    consola.info(remoteBranchText)
     // consola.success('Remote branches info loaded.')
   }
   else {
-    spinner.succeed('No remote branches.')
+    spinner.succeed(`Remote branch ${colors.green(GitGeass.defaultBranch)}${colors.gray('(default)')} is ignored.` + ' ' + 'No other remote branches.')
     // consola.success('No remote branches.')
   }
-
-  // spaces for align
-  const remoteBranchText = `Remote branch   ${colors.green(GitGeass.defaultBranch)}${colors.gray('(default)')} is ignored.`
-  consola.info(remoteBranchText)
 
   return branchInfoArr
 }
