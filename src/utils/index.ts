@@ -70,6 +70,8 @@ export async function getRemoteBranches(): Promise<BranchInfo[]> {
         name: branches[index],
       }
     })
+    // 过滤无效日期
+    branchInfoArr = branchInfoArr.filter(item => !Number.isNaN(item.latestCommitDate.valueOf()))
 
     spinner.succeed(`Remote ${colors.gray('branches info loaded.')}`)
     consola.info(remoteBranchText)

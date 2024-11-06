@@ -1,20 +1,24 @@
 import type { BranchSummaryBranch } from 'simple-git'
 import type { BranchInfo } from './types'
 import process from 'node:process'
-import { group, intro, multiselect } from '@clack/prompts'
+
+// @clark/prompts is not perfect when using long choices
+// import { group, intro, multiselect } from '@clack/prompts'
 
 import consola from 'consola'
+
 import { colors } from 'consola/utils'
 import { formatDate, formatDistanceToNow } from 'date-fns'
-
 import ora from 'ora'
+
+import prompts from 'prompts'
 import { git } from './env'
 import { getRemoteBranches, getRemoteDefaultBranch } from './utils'
 
 const defaultCleanBranchesOptions = {
   days: 0,
   merged: [],
-  remote: true,
+  remote: false,
 }
 
 /**
@@ -107,16 +111,19 @@ export async function cleanBranches(options: {
     remoteBranches = await getRemoteBranches()
   }
 
-  const branchOptions = [
+  const branchOptions: prompts.Choice[] = [
     ...oldBranches,
     ...remoteBranches,
   ].map((branch) => {
-    const fromNow = formatDistanceToNow(branch.latestCommitDate, { addSuffix: true })
+    // 判断是否为有效日期格式
+    const latestCommitDate = branch.latestCommitDate
+    const fromNow = formatDistanceToNow(latestCommitDate, { addSuffix: true })
     return {
-      label: `${colors.cyan(branch.name)}`,
+      title: `${colors.cyan(branch.name)}`,
       value: branch.name,
       // 带有时区
-      hint: `${colors.yellow(branch.commit)} ${colors.green(fromNow)} [${formatDate(branch.latestCommitDate, 'yyyy-MM-dd HH:mm:ss xxx')}]`,
+      description: `${colors.yellow(branch.commit)} ${colors.green(fromNow)} [${formatDate(branch.latestCommitDate, 'yyyy-MM-dd HH:mm:ss xxx')}]`,
+      // selected: true,
     }
   })
 
@@ -128,25 +135,25 @@ export async function cleanBranches(options: {
   console.log()
   const mergedBranchesText = options.merged?.map(b => colors.cyan(b)).join('|')
 
-  intro(
-    `${colors.green('a')} ${colors.gray('to select/unselect all,')} ${colors.green('enter')} ${colors.gray('to confirm,')} ${colors.green('space')} ${colors.gray('to toggle')}`,
-  )
-  const results = await group(
-    {
-      deletedBranches: () => multiselect({
-        message: `Delete ${options.merged?.length ? `merged to ${mergedBranchesText}` : 'old'} Branches?`,
-        options: branchOptions,
-        initialValues: branchOptions.map(b => b.value),
-      }),
+  const block = colors.bold(colors.dim(colors.gray('┃')))
+  console.log(block, `${colors.green('a')} ${colors.gray('to select/unselect all,')} ${colors.green('enter')} ${colors.gray('to confirm,')} ${colors.green('space')} ${colors.gray('to toggle')}`)
+  console.log()
+
+  const results = await prompts({
+    instructions: false,
+    type: 'multiselect',
+    name: 'deletedBranches',
+    message: `Delete ${options.merged?.length ? `merged to ${mergedBranchesText}` : 'old'} Branches?`,
+    choices: branchOptions,
+
+  }, {
+    onCancel: () => {
+      consola.warn('User canceled.')
+      process.exit(0)
     },
-    {
-      onCancel: () => {
-        consola.warn('User canceled.')
-        process.exit(0)
-      },
-    },
-  )
-  const deletedBranches = results.deletedBranches
+  })
+
+  const deletedBranches = results.deletedBranches as string[]
   if (deletedBranches) {
     for (const branch of deletedBranches) {
       if (branch.startsWith('origin/')) {

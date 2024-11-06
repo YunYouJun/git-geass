@@ -30,7 +30,7 @@ const cli = yargs(hideBin(process.argv))
             alias: 'r',
             type: 'boolean',
             description: 'Delete remote branches',
-            default: true,
+            default: false,
           })
       },
       (argv) => {

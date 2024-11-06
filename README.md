@@ -33,6 +33,8 @@ gitg clean branch -d 10
 gitg clean branch -m master
 # clean merged to master/main branch
 gitg clean branch -m master -m main
+# clean remote branches
+gitg clean branch -r
 ```
 
 ## [Sponsors](https://sponsors.yunyoujun.cn)
