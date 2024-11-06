@@ -21,7 +21,7 @@ export async function cleanBranches(options: {
    */
   days?: number
   /**
-   * 是否合并到目标分支
+   * 筛选已合并到目标分支的分支
    * @example clean branch -m master
    * @example clean branch -m main -m master
    */
@@ -50,7 +50,8 @@ export async function cleanBranches(options: {
         const mBranches = (await git.raw(['branch', '--merged', branch]))
           .split('\n')
           .map(b => b.trim())
-          .filter(b => !!b && !b.startsWith('*'))
+          // 不能删除当前分支/目标分支
+          .filter(b => !!b && !b.startsWith('*') && b !== branch)
         mergedBranches.push(...mBranches)
       }
       // eslint-disable-next-line unused-imports/no-unused-vars
@@ -61,17 +62,17 @@ export async function cleanBranches(options: {
   }
 
   for (const branch in branchSummary.branches) {
-    if (branch === branchSummary.current)
+    if (branchSummary.branches[branch].current)
       continue
 
     // 获取分支的最后提交日期
-    const log = await git.log({ from: branch })
+    const log = await git.log({ from: branch, maxCount: 1 })
     const latestCommit = log.latest
     if (latestCommit) {
       const lastCommitDate = new Date(latestCommit.date)
 
       // 如果分支的最后提交日期早于 n 天前，删除该分支
-      if (lastCommitDate.valueOf() < nDaysAgo) {
+      if (lastCommitDate.valueOf() <= nDaysAgo) {
         oldBranches.push({
           ...branchSummary.branches[branch],
           lastCommitDate,
@@ -98,11 +99,12 @@ export async function cleanBranches(options: {
     selected: true,
   }))
 
+  const mergedBranchesText = options.merged?.map(b => colors.cyan(b)).join('|')
   const results = await prompts({
     instructions: false,
     type: 'multiselect',
     name: 'deletedBranches',
-    message: `Delete ${options.merged?.length ? 'merged' : 'old'} Branches?`,
+    message: `Delete ${options.merged?.length ? `merged to ${mergedBranchesText}` : 'old'} Branches?`,
     choices: branchOptions,
   }, {
     onCancel: () => {
@@ -114,7 +116,7 @@ export async function cleanBranches(options: {
   if (results.deletedBranches) {
     for (const branch of results.deletedBranches) {
       const data = await git.deleteLocalBranch(branch, true)
-      consola.success(`${colors.cyan(branch)}(${colors.yellow(data.hash || '')}) deleted.`)
+      consola.success(`${colors.cyan(branch)}(${colors.yellow(data?.hash || '')}) deleted.`)
     }
   }
 }
