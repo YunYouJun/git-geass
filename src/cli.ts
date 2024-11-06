@@ -26,12 +26,19 @@ const cli = yargs(hideBin(process.argv))
             type: 'array',
             description: 'Only show merged target branches',
           })
+          .options('remote', {
+            alias: 'r',
+            type: 'boolean',
+            description: 'Delete remote branches',
+            default: true,
+          })
       },
       (argv) => {
         import('./clean').then((module) => {
           module.cleanBranches({
             days: argv.days as number,
             merged: argv.merged as string[],
+            remote: argv.remote as boolean,
           })
         })
       },
