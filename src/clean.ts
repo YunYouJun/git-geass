@@ -95,7 +95,8 @@ export async function cleanBranches(options: {
   // filter by mergedBranches
   oldBranches = oldBranches.filter(branch => options.merged?.length ? mergedBranches.includes(branch.name) : true)
 
-  s.succeed('Local branches info loaded.')
+  // two spaces for align
+  s.succeed(`Local  ${colors.gray('branches info loaded.')}`)
 
   let remoteBranches: BranchInfo[] = []
   if (options.remote) {
@@ -148,13 +149,13 @@ export async function cleanBranches(options: {
   const deletedBranches = results.deletedBranches
   if (deletedBranches) {
     for (const branch of deletedBranches) {
-      if (branch.startsWith('refs/')) {
+      if (branch.startsWith('origin/')) {
         // delete remote branch
         const remoteName = 'origin'
         const remoteBranch = branch.replace(`${remoteName}/`, '')
-        const data = await git.push([remoteName, '--delete', remoteBranch])
-        console.log(data)
-        consola.success(`Remote branch ${colors.cyan(remoteBranch)} deleted.`)
+        const data = (await git.push([remoteName, '--delete', remoteBranch]))
+        consola.success(`Remote branch ${colors.dim(`${remoteName}/`)}${colors.cyan(remoteBranch)} deleted.`)
+        consola.info(data.remoteMessages.all.join('\n'))
       }
       else {
         const data = await git.deleteLocalBranch(branch, true)

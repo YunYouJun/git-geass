@@ -70,7 +70,7 @@ export async function getRemoteBranches(): Promise<BranchInfo[]> {
       }
     })
 
-    spinner.succeed('Remote branches info loaded.')
+    spinner.succeed(`Remote ${colors.gray('branches info loaded.')}`)
     // consola.success('Remote branches info loaded.')
   }
   else {
@@ -78,7 +78,8 @@ export async function getRemoteBranches(): Promise<BranchInfo[]> {
     // consola.success('No remote branches.')
   }
 
-  const remoteBranchText = `Remote branch ${colors.green(GitGeass.defaultBranch)}${colors.gray('(default)')} is ignored.`
+  // spaces for align
+  const remoteBranchText = `Remote branch   ${colors.green(GitGeass.defaultBranch)}${colors.gray('(default)')} is ignored.`
   consola.info(remoteBranchText)
 
   return branchInfoArr
