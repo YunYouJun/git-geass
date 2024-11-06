@@ -160,8 +160,10 @@ export async function cleanBranches(options: {
         // delete remote branch
         const remoteName = 'origin'
         const remoteBranch = branch.replace(`${remoteName}/`, '')
+        const branchText = `${colors.dim(`${remoteName}/`)}${colors.cyan(remoteBranch)}`
+        const s = ora(`Deleting remote branch ${branchText}`).start()
         const data = (await git.push([remoteName, '--delete', remoteBranch]))
-        consola.success(`Remote branch ${colors.dim(`${remoteName}/`)}${colors.cyan(remoteBranch)} deleted.`)
+        s.succeed(`Remote branch ${branchText} deleted.`)
         if (data.remoteMessages.all.length)
           consola.info(data.remoteMessages.all.join('\n'))
       }
