@@ -1,0 +1,11 @@
+{
+  "name": "git-repo",
+  "version": "0.0.1",
+  "description": "A demo git repo for test.",
+  "scripts": {
+    "release": "bumpp -y"
+  },
+  "devDependencies": {
+    "bumpp": "^9.8.1"
+  }
+}
