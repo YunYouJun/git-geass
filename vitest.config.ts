@@ -1,15 +1,21 @@
-import { defineConfig } from 'vitest/config'
+import { defaultExclude, defineConfig } from 'vitest/config'
 
 export default defineConfig({
   server: {
     watch: {
       // ignore fs changes in fixtures
-      ignored: ['**/fixtures/**'],
+      ignored: [
+        ...defaultExclude,
+        '**/fixtures/**/*',
+      ],
     },
   },
 
   test: {
     // ...
-    exclude: ['**/fixtures/**'],
+    exclude: [
+      ...defaultExclude,
+      '**/fixtures/**',
+    ],
   },
 })

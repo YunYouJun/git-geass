@@ -11,9 +11,9 @@ describe('gitg update', () => {
     await fs.emptyDir(gitgUpdateDir)
     await fs.copy(config.gitRepoDir, gitgUpdateDir)
 
-    // return async () => {
-    //   await fs.remove(gitgUpdateDir)
-    // }
+    return async () => {
+      await fs.remove(gitgUpdateDir)
+    }
   })
 
   it('gitg update -f', async () => {

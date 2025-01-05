@@ -5,7 +5,6 @@ import consola from 'consola'
 import { colors } from 'consola/utils'
 import fs from 'fs-extra'
 
-import ora from 'ora'
 import prompts from 'prompts'
 import simpleGit, { CleanOptions } from 'simple-git'
 import { git } from '../env'
@@ -45,9 +44,10 @@ async function cleanRepo(params: {
   git: SimpleGit
   cleanMode: string
 }) {
-  const spinner = ora(`Cleaning repo: ${colors.cyan(params.name)}`).start()
+  // const spinner = ora(`Cleaning repo: ${colors.cyan(params.name)}`).start()
   await params.git.clean(params.cleanMode)
-  spinner.succeed(`Cleaned repo: ${colors.cyan(params.name)}`)
+  // spinner.succeed(`Cleaned repo: ${colors.cyan(params.name)}`)
+  consola.success(`Clean repo: ${colors.cyan(params.name)}`)
 }
 
 /**
