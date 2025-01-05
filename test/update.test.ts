@@ -1,5 +1,6 @@
 import path from 'node:path'
 import fs from 'fs-extra'
+import simpleGit from 'simple-git'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { updateRepos } from '../src'
 import { config } from './config'
@@ -8,6 +9,9 @@ const gitgUpdateDir = path.resolve(config.tempDir, 'gitg-update')
 
 describe('gitg update', () => {
   beforeAll(async () => {
+    const git = simpleGit(config.gitRepoDir)
+    await git.init()
+
     await fs.emptyDir(gitgUpdateDir)
   })
 
