@@ -1,5 +1,5 @@
 import type { BranchSummaryBranch } from 'simple-git'
-import type { BranchInfo } from './types'
+import type { BranchInfo } from '../types'
 import process from 'node:process'
 
 // @clark/prompts is not perfect when using long choices
@@ -12,8 +12,8 @@ import { formatDate, formatDistanceToNow } from 'date-fns'
 import ora from 'ora'
 
 import prompts from 'prompts'
-import { git } from './env'
-import { getRemoteBranches, getRemoteDefaultBranch } from './utils'
+import { git } from '../env'
+import { getRemoteBranches, getRemoteDefaultBranch } from '../utils'
 
 const defaultCleanBranchesOptions = {
   days: 0,

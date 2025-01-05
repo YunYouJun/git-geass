@@ -3,4 +3,3 @@ packages:
   - docs
   - packages/*
   - examples/*
-  - test/fixtures/*
