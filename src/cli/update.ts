@@ -57,7 +57,12 @@ async function stashRepo(params: {
   name: string
   git: SimpleGit
 }) {
-  await params.git.stash()
+  try {
+    await params.git.stash()
+  }
+  catch (e: any) {
+    consola.error(e?.message)
+  }
 }
 
 /**
