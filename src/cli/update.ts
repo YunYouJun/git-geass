@@ -75,6 +75,8 @@ async function updateRepo(params: {
  */
 export async function updateRepos(options: GitgUpdateOptions) {
   const baseDir = options.cwd || process.cwd()
+  git.cwd(baseDir)
+
   // if
   consola.info('Updating all git repositories in the current directory', options)
 

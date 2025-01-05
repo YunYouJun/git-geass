@@ -1,7 +1,7 @@
 import path from 'node:path'
 import fs from 'fs-extra'
 import { beforeAll, describe, expect, it } from 'vitest'
-import { git, updateRepos } from '../src'
+import { updateRepos } from '../src'
 import { config } from './config'
 
 const gitgUpdateDir = path.resolve(config.tempDir, 'gitg-update')
@@ -9,21 +9,19 @@ const gitgUpdateDir = path.resolve(config.tempDir, 'gitg-update')
 describe('gitg update', () => {
   beforeAll(async () => {
     await fs.emptyDir(gitgUpdateDir)
-    await fs.copy(config.gitRepoDir, gitgUpdateDir)
-
-    return async () => {
-      await fs.remove(gitgUpdateDir)
-    }
   })
 
   it('gitg update -f', async () => {
-    git.cwd(gitgUpdateDir)
+    const gitgUpdateFDir = path.resolve(gitgUpdateDir, 'f')
+    await fs.emptyDir(gitgUpdateFDir)
+    await fs.copy(config.gitRepoDir, gitgUpdateFDir)
 
-    const untrackedJSON = path.resolve(gitgUpdateDir, 'untracked.json')
+    const untrackedJSON = path.resolve(gitgUpdateFDir, 'untracked.json')
     await fs.writeJSON(untrackedJSON, {})
 
     expect(await fs.pathExists(untrackedJSON)).toBe(true)
     await updateRepos({
+      cwd: gitgUpdateFDir,
       force: true,
       yes: true,
     })
@@ -31,7 +29,7 @@ describe('gitg update', () => {
   })
 
   it('gitg update -f -r', async () => {
-    const childrenDir = path.resolve(gitgUpdateDir, 'children')
+    const childrenDir = path.resolve(gitgUpdateDir, 'r')
     await fs.emptyDir(childrenDir)
 
     // create 3 children git repos
