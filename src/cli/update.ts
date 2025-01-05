@@ -51,6 +51,16 @@ async function cleanRepo(params: {
 }
 
 /**
+ * stash one git repo
+ */
+async function stashRepo(params: {
+  name: string
+  git: SimpleGit
+}) {
+  await params.git.stash()
+}
+
+/**
  * update one git repo
  */
 async function updateRepo(params: {
@@ -76,9 +86,6 @@ async function updateRepo(params: {
 export async function updateRepos(options: GitgUpdateOptions) {
   const baseDir = options.cwd || process.cwd()
   git.cwd(baseDir)
-
-  // if
-  consola.info('Updating all git repositories in the current directory', options)
 
   if (!options.yes) {
     // confirm force clean
@@ -113,6 +120,10 @@ export async function updateRepos(options: GitgUpdateOptions) {
             git: repoGit,
             cleanMode,
           })
+          await stashRepo({
+            name: dir.name,
+            git: repoGit,
+          })
           await updateRepo({
             name: dir.name,
             git: repoGit,
@@ -126,6 +137,10 @@ export async function updateRepos(options: GitgUpdateOptions) {
       name: path.dirname(baseDir),
       git,
       cleanMode,
+    })
+    await stashRepo({
+      name: path.dirname(baseDir),
+      git,
     })
     await updateRepo({
       name: path.dirname(baseDir),
