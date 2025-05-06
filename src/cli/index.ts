@@ -85,11 +85,19 @@ const cli = yargs(hideBin(process.argv))
           alias: 'd',
           type: 'string',
           description: 'The new commit date',
+        })
+        .options('author', {
+          alias: 'a',
+          type: 'string',
+          description: 'The new commit author',
         }),
     (argv) => {
       import('./amend').then((module) => {
-        if (typeof argv.d !== 'undefined') {
+        if (typeof argv.date !== 'undefined') {
           module.amendDate()
+        }
+        else if (typeof argv.author !== 'undefined') {
+          module.amendAuthor()
         }
       })
     },

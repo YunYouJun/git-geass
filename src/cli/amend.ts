@@ -1,3 +1,4 @@
+import process from 'node:process'
 import consola from 'consola'
 import { colors } from 'consola/utils'
 import prompts from 'prompts'
@@ -23,9 +24,14 @@ export async function amendDate() {
       consola.info(`Run ${colors.cyan('git log --format=fuller')} to see the commit date`)
       return dateString
     },
+  }, {
+    onCancel: () => {
+      consola.warn('User canceled.')
+      process.exit(0)
+    },
   })
-  const date = results.date
 
+  const date = results.date
   /**
    * --date only affects the author date
    * git.env with simple-git-hooks has some issues
@@ -45,4 +51,53 @@ export async function amendDate() {
    */
   consola.info(`${colors.dim('git rebase --committer-date-is-author-date')}`)
   await git.raw(['rebase', '--committer-date-is-author-date'])
+}
+
+/**
+ * amend author
+ * all commits in branch
+ */
+export async function amendAuthor() {
+  const results = await prompts([
+    {
+      type: 'text',
+      name: 'author',
+      message: 'Enter the new author name',
+    },
+    {
+      type: 'text',
+      name: 'email',
+      message: 'Enter the new author email',
+    },
+  ])
+  const { author, email } = results
+
+  if (!author) {
+    consola.error('Author name is required')
+    return
+  }
+  if (!email) {
+    consola.error('Email is required')
+    return
+  }
+
+  // git filter-branch --env-filter ''
+  const bashScript = `
+OLD_EMAIL="old@example.com"
+NEW_NAME="${author}"
+NEW_EMAIL="${email}"
+
+if [ "$GIT_COMMITTER_EMAIL" = "$OLD_EMAIL" ]
+then
+    export GIT_COMMITTER_NAME="$NEW_NAME"
+    export GIT_COMMITTER_EMAIL="$NEW_EMAIL"
+fi
+if [ "$GIT_AUTHOR_EMAIL" = "$OLD_EMAIL" ]
+then
+    export GIT_AUTHOR_NAME="$NEW_NAME"
+    export GIT_AUTHOR_EMAIL="$NEW_EMAIL"
+fi
+    `
+  // 仅处理 本地分支 和 本地标签
+  git.raw(['filter-branch', '--env-filter', bashScript, '--tag-name-filter', 'cat', '--', '--branches', '--tags'])
 }

@@ -24,7 +24,13 @@ pnpm i -g git-geass
 # git-geass help
 gitg -h
 git-geass -h
+```
 
+### Clean Branch
+
+> 清理分支
+
+```bash
 # clean branch
 gitg clean branch
 # clean 10 days ago branch
@@ -35,6 +41,30 @@ gitg clean branch -m master
 gitg clean branch -m master -m main
 # clean remote branches
 gitg clean branch -r
+```
+
+### Modify Commit Date (Author Date & Committer Date)
+
+> 修改历史提交日期
+
+> Difference with `git commit --amend --no-edit --date=now`
+> - modify author date & committer date (--date only modify author date)
+> - modify with prompt to choose date
+
+```bash
+gitg amend -d
+```
+
+### Modify Commit Author
+
+> 修改历史提交作者
+
+```bash
+gitg amend -a
+gitg amend --author
+
+# input author name
+# input author email
 ```
 
 ## [Sponsors](https://sponsors.yunyoujun.cn)
