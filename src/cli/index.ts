@@ -70,6 +70,30 @@ const cli = yargs(hideBin(process.argv))
         }),
     argv => import('./update').then(module => module.default(argv)),
   )
+  // amend
+  .command(
+    'amend',
+    'Amend the last commit message',
+    args =>
+      args
+        .options('message', {
+          alias: 'm',
+          type: 'string',
+          description: 'The new commit message',
+        })
+        .options('date', {
+          alias: 'd',
+          type: 'string',
+          description: 'The new commit date',
+        }),
+    (argv) => {
+      import('./amend').then((module) => {
+        if (typeof argv.d !== 'undefined') {
+          module.amendDate()
+        }
+      })
+    },
+  )
   .help()
 
 export function main(): void {

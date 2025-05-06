@@ -3,3 +3,8 @@ packages:
   - docs
   - packages/*
   - examples/*
+ignoredBuiltDependencies:
+  - esbuild
+  - unrs-resolver
+onlyBuiltDependencies:
+  - simple-git-hooks

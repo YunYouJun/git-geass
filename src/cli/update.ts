@@ -5,6 +5,7 @@ import consola from 'consola'
 import { colors } from 'consola/utils'
 import fs from 'fs-extra'
 
+import ora from 'ora'
 import prompts from 'prompts'
 import simpleGit, { CleanOptions } from 'simple-git'
 import { git } from '../env'
@@ -47,7 +48,7 @@ async function cleanRepo(params: {
   // const spinner = ora(`Cleaning repo: ${colors.cyan(params.name)}`).start()
   await params.git.clean(params.cleanMode)
   // spinner.succeed(`Cleaned repo: ${colors.cyan(params.name)}`)
-  consola.success(`Clean repo: ${colors.cyan(params.name)}`)
+  consola.success(`${colors.cyan(params.name)}: git clean`)
 }
 
 /**
@@ -59,6 +60,7 @@ async function stashRepo(params: {
 }) {
   try {
     await params.git.stash()
+    consola.success(`${colors.cyan(params.name)}: git stash`)
   }
   catch (e: any) {
     consola.error(e?.message)
@@ -72,12 +74,14 @@ async function updateRepo(params: {
   name: string
   git: SimpleGit
 }) {
+  const spinner = ora(`${colors.cyan(params.name)}: git pull`).start()
   try {
     await params.git.pull()
+    spinner.succeed(`${colors.cyan(params.name)}: git pull`)
   }
   catch (e: any) {
     if (e.message.includes('git pull <remote> <branch>')) {
-      consola.info(`${colors.cyan(params.name)} no remote to pull.`)
+      spinner.fail(`${colors.cyan(params.name)} no remote to pull.`)
     }
     else {
       console.error(e.message)

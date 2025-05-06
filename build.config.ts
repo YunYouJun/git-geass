@@ -7,9 +7,6 @@ export default defineBuildConfig({
   ],
   declaration: true,
   clean: true,
-  rollup: {
-    emitCJS: true,
-  },
   // externals: [
   //   ...Object.keys(pkg.dependencies),
   // ],
