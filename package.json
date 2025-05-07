@@ -1,7 +1,7 @@
 {
   "name": "git-geass",
   "type": "module",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "packageManager": "pnpm@10.10.0",
   "description": "🛠️ Some quick actions for git.",
   "author": "YunYouJun <me@yunyoujun.cn>",
