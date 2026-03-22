@@ -6,13 +6,13 @@
 [![JSDocs][jsdocs-src]][jsdocs-href]
 [![License][license-src]][license-href]
 
-Some quick **interactive** actions for git.
+一些快捷的 Git **交互式**操作。
 
-> Its name inspired by `code-geass`.
+> 名称灵感来自《反叛的鲁路修》（`code-geass`）。
 
-**English** | [中文](./README.zh-CN.md)
+[English](./README.md) | **中文**
 
-## Install
+## 安装
 
 ```bash
 pnpm i -g git-geass
@@ -20,94 +20,94 @@ pnpm i -g git-geass
 # yarn add -g git-geass
 ```
 
-## Usage
+## 使用
 
 ```bash
 gitg -h
-# or
+# 或
 git-geass -h
 ```
 
 ### Clean Branch
 
-Clean old branches interactively.
+交互式清理旧分支。
 
 ```bash
-# clean all non-current branches
+# 清理所有非当前分支
 gitg clean branch
 
-# clean branches older than 10 days
+# 清理 10 天前的分支
 gitg clean branch -d 10
 
-# clean branches merged to master
+# 清理已合并到 master 的分支
 gitg clean branch -m master
 
-# clean branches merged to master or main
+# 清理已合并到 master 或 main 的分支
 gitg clean branch -m master -m main
 
-# clean remote branches (push `--delete` to origin)
+# 清理远程分支（向 origin 推送 `--delete`）
 gitg clean branch -r
 ```
 
 ### Clean Repo
 
-Scan directories for stale Git repos and clean them up.
+扫描目录中的无用 Git 仓库并清理。
 
-Criteria: empty repos (no commits), repos with no activity for > 180 days, or repos without a remote.
+判定标准：空仓库（无提交）、超过 180 天无提交、或无 remote。
 
 ```bash
-# scan current directory and interactively delete stale repos
+# 扫描当前目录，交互式选择删除无用仓库
 gitg clean repo
 
-# scan a specific directory
+# 扫描指定目录
 gitg clean repo /path/to/repos
 
-# custom stale threshold (e.g. 90 days)
+# 自定义闲置阈值（例如 90 天）
 gitg clean repo -d 90
 
-# preview only, without deleting
+# 仅预览，不执行删除
 gitg clean repo --dry-run
 ```
 
 ### Update Repo
 
-Force-update git repo(s): clean untracked files, stash changes, then pull.
+强制更新 Git 仓库：清理未跟踪文件、暂存更改、然后拉取。
 
 ```bash
-# update current repo (clean + stash + pull)
+# 更新当前仓库（clean + stash + pull）
 gitg update
 
-# force clean (instead of dry-run) before pull
+# 强制清理（而非 dry-run）后拉取
 gitg update -f
 
-# recursively update all git repos in the current directory
+# 递归更新当前目录下的所有 Git 仓库
 gitg update -r
 
-# force + recursive
+# 强制 + 递归
 gitg update -f -r
 ```
 
 ### Amend Date
 
-Modify the last commit's author date and committer date.
+修改最后一次提交的作者日期和提交者日期。
 
 ```bash
 gitg amend -d
-# enter a date interactively (e.g. 2024-01-01 12:00:00)
+# 交互式输入日期（如 2024-01-01 12:00:00）
 ```
 
 ### Amend Author
 
-Modify the commit author for all commits in the current branch.
+修改当前分支中所有提交的作者信息。
 
 ```bash
 gitg amend -a
-# or
+# 或
 gitg amend --author
-# enter author name and email interactively
+# 交互式输入作者名和邮箱
 ```
 
-## Sponsors
+## 赞助
 
 <p align="center">
   <a href="https://sponsors.yunyoujun.cn">
@@ -115,7 +115,7 @@ gitg amend --author
   </a>
 </p>
 
-## License
+## 许可证
 
 [MIT](./LICENSE) LICENSE @2024-PRESENT [@YunYouJun](https://github.com/YunYouJun)
 
