@@ -5,6 +5,7 @@ import { hideBin } from 'yargs/helpers'
 import { version } from '../../package.json'
 
 export * from './clean'
+export * from './origin'
 export * from './update'
 
 const cli = yargs(hideBin(process.argv))
@@ -101,6 +102,28 @@ const cli = yargs(hideBin(process.argv))
           default: false,
         }),
     argv => import('./update').then(module => module.default(argv)),
+  )
+  // origin protocol toggle
+  .command(
+    'origin [protocol]',
+    'Toggle remote URL between HTTPS and SSH, e.g.: gitg origin ssh',
+    args =>
+      args
+        .positional('protocol', {
+          type: 'string',
+          description: 'Target protocol: https or ssh',
+          choices: ['https', 'ssh'] as const,
+        })
+        .options('remote', {
+          alias: 'r',
+          type: 'string',
+          description: 'Remote name',
+          default: 'origin',
+        }),
+    argv => import('./origin').then(module => module.toggleOrigin({
+      protocol: argv.protocol as 'https' | 'ssh' | undefined,
+      remote: argv.remote as string,
+    })),
   )
   // amend
   .command(
