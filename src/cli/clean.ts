@@ -1,19 +1,16 @@
 import type { BranchSummaryBranch } from 'simple-git'
-import type { BranchInfo } from '../types'
+import type { BranchInfo, RepoHealth } from '../types'
+import { rmSync } from 'node:fs'
 import process from 'node:process'
 
-// @clark/prompts is not perfect when using long choices
-// import { group, intro, multiselect } from '@clack/prompts'
+import { cancel, confirm, isCancel, multiselect, spinner } from '@clack/prompts'
 
 import consola from 'consola'
 
 import { colors } from 'consola/utils'
 import { formatDate, formatDistanceToNow } from 'date-fns'
-import ora from 'ora'
-
-import prompts from 'prompts'
 import { git } from '../env'
-import { getRemoteBranches, getRemoteDefaultBranch } from '../utils'
+import { findStaleRepos, getRemoteBranches, getRemoteDefaultBranch } from '../utils'
 
 const defaultCleanBranchesOptions = {
   days: 0,
@@ -46,7 +43,8 @@ export async function cleanBranches(options: {
     ...options,
   }
 
-  const s = ora('Loading local branches info').start()
+  const s = spinner()
+  s.start('Loading local branches info')
   const branchSummary = await git.branchLocal()
 
   const currentDate = (new Date()).valueOf()
@@ -100,7 +98,7 @@ export async function cleanBranches(options: {
   oldBranches = oldBranches.filter(branch => options.merged?.length ? mergedBranches.includes(branch.name) : true)
 
   // two spaces for align
-  s.succeed(`Local  ${colors.gray('branches info loaded.')}`)
+  s.stop(`Local  ${colors.gray('branches info loaded.')}`)
 
   let remoteBranches: BranchInfo[] = []
   if (options.remote) {
@@ -111,7 +109,7 @@ export async function cleanBranches(options: {
     remoteBranches = await getRemoteBranches()
   }
 
-  const branchOptions: prompts.Choice[] = [
+  const branchOptions = [
     ...oldBranches,
     ...remoteBranches,
   ].map((branch) => {
@@ -119,11 +117,10 @@ export async function cleanBranches(options: {
     const latestCommitDate = branch.latestCommitDate
     const fromNow = formatDistanceToNow(latestCommitDate, { addSuffix: true })
     return {
-      title: `${colors.cyan(branch.name)}`,
+      label: `${colors.cyan(branch.name)}`,
       value: branch.name,
       // 带有时区
-      description: `${colors.yellow(branch.commit)} ${colors.green(fromNow)} [${formatDate(branch.latestCommitDate, 'yyyy-MM-dd HH:mm:ss xxx')}]`,
-      // selected: true,
+      hint: `${colors.yellow(branch.commit)} ${colors.green(fromNow)} [${formatDate(branch.latestCommitDate, 'yyyy-MM-dd HH:mm:ss xxx')}]`,
     }
   })
 
@@ -135,25 +132,16 @@ export async function cleanBranches(options: {
   console.log()
   const mergedBranchesText = options.merged?.map(b => colors.cyan(b)).join('|')
 
-  const block = colors.bold(colors.dim(colors.gray('┃')))
-  console.log(block, `${colors.green('a')} ${colors.gray('to select/unselect all,')} ${colors.green('enter')} ${colors.gray('to confirm,')} ${colors.green('space')} ${colors.gray('to toggle')}`)
-  console.log()
-
-  const results = await prompts({
-    instructions: false,
-    type: 'multiselect',
-    name: 'deletedBranches',
+  const deletedBranches = await multiselect({
     message: `Delete ${options.merged?.length ? `merged to ${mergedBranchesText}` : 'old'} Branches?`,
-    choices: branchOptions,
-
-  }, {
-    onCancel: () => {
-      consola.warn('User canceled.')
-      process.exit(0)
-    },
+    options: branchOptions,
   })
 
-  const deletedBranches = results.deletedBranches as string[]
+  if (isCancel(deletedBranches)) {
+    cancel('User canceled.')
+    process.exit(0)
+  }
+
   if (deletedBranches) {
     for (const branch of deletedBranches) {
       if (branch.startsWith('origin/')) {
@@ -161,9 +149,10 @@ export async function cleanBranches(options: {
         const remoteName = 'origin'
         const remoteBranch = branch.replace(`${remoteName}/`, '')
         const branchText = `${colors.dim(`${remoteName}/`)}${colors.cyan(remoteBranch)}`
-        const s = ora(`Deleting remote branch ${branchText}`).start()
+        const rs = spinner()
+        rs.start(`Deleting remote branch ${branchText}`)
         const data = (await git.push([remoteName, '--delete', remoteBranch]))
-        s.succeed(`Remote branch ${branchText} deleted.`)
+        rs.stop(`Remote branch ${branchText} deleted.`)
         if (data.remoteMessages.all.length)
           consola.info(data.remoteMessages.all.join('\n'))
       }
@@ -173,4 +162,199 @@ export async function cleanBranches(options: {
       }
     }
   }
+}
+
+// ============ Clean Repos ============
+
+const EMOJI_RE = /^(\p{Emoji_Presentation})/u
+
+/** 仓库分类标签 */
+const CATEGORY_NO_COMMITS = '📭 无提交（空仓库）'
+const CATEGORY_STALE = '💤 长期未提交（超过半年）'
+const CATEGORY_NO_REMOTE = '🔗 无 Remote（可能是临时仓库）'
+
+/**
+ * 将无用仓库按原因分类
+ * 一个仓库可能同时匹配多个分类，优先归入最严重的分类
+ */
+function categorizeRepos(repos: RepoHealth[]): Record<string, RepoHealth[]> {
+  const groups: Record<string, RepoHealth[]> = {
+    [CATEGORY_NO_COMMITS]: [],
+    [CATEGORY_STALE]: [],
+    [CATEGORY_NO_REMOTE]: [],
+  }
+
+  const assigned = new Set<string>()
+
+  // 第一轮：空仓库（最严重）
+  for (const repo of repos) {
+    if (repo.totalCommits === 0) {
+      groups[CATEGORY_NO_COMMITS].push(repo)
+      assigned.add(repo.path)
+    }
+  }
+
+  // 第二轮：长期未提交
+  for (const repo of repos) {
+    if (assigned.has(repo.path))
+      continue
+    if (repo.daysSinceLastCommit !== null && repo.daysSinceLastCommit > 180) {
+      groups[CATEGORY_STALE].push(repo)
+      assigned.add(repo.path)
+    }
+  }
+
+  // 第三轮：仅无 remote
+  for (const repo of repos) {
+    if (assigned.has(repo.path))
+      continue
+    if (!repo.hasRemote) {
+      groups[CATEGORY_NO_REMOTE].push(repo)
+      assigned.add(repo.path)
+    }
+  }
+
+  return groups
+}
+
+/** 格式化仓库提示信息 */
+function formatRepoHint(repo: RepoHealth): string {
+  const parts: string[] = []
+  parts.push(colors.cyan(`${repo.totalCommits} 次提交`))
+  parts.push(repo.hasRemote ? colors.green('remote: 有') : colors.red('remote: 无'))
+  if (repo.lastCommitDate)
+    parts.push(`最后提交: ${colors.dim(repo.lastCommitDate)}`)
+  if (repo.daysSinceLastCommit !== null)
+    parts.push(colors.yellow(`${repo.daysSinceLastCommit} 天前`))
+  return parts.join(colors.dim(' · '))
+}
+
+/**
+ * 清理无用的 Git 仓库
+ * 递归扫描 scanRoot 下的所有 Git 仓库，检测空仓库、长期未提交、无 remote 等问题仓库
+ */
+export async function cleanRepos(options: {
+  /** 扫描根目录，默认 process.cwd() */
+  scanRoot?: string
+  /** 天数阈值，默认 180 */
+  days?: number
+  /** 仅预览，不执行删除 */
+  dryRun?: boolean
+} = {}): Promise<void> {
+  const scanRoot = options.scanRoot || process.cwd()
+  const staleDays = options.days || 180
+
+  consola.info(`🧹 Git 仓库清理`)
+  console.log()
+
+  const s2 = spinner()
+  s2.start(`扫描目录: ${colors.cyan(scanRoot)}`)
+
+  const staleRepos = await findStaleRepos(scanRoot, staleDays, (done, total) => {
+    s2.message(`分析仓库健康状态 ${colors.cyan(`(${done}/${total})`)}`)
+  })
+
+  s2.stop(`扫描完成，发现 ${colors.bold(colors.yellow(String(staleRepos.length)))} 个可清理仓库`)
+
+  if (staleRepos.length === 0) {
+    consola.success('所有仓库状态良好，无需清理！')
+    return
+  }
+
+  // 按分类分组
+  const grouped = categorizeRepos(staleRepos)
+
+  if (options.dryRun) {
+    // 预览模式：仅列出
+    for (const [category, repos] of Object.entries(grouped)) {
+      if (repos.length === 0)
+        continue
+      consola.info(`${category}（${repos.length} 个）`)
+      for (const repo of repos) {
+        console.log(`  ${colors.bold(repo.name)}  ${colors.dim(formatRepoHint(repo))}`)
+      }
+    }
+    console.log()
+    consola.info('📋 预览模式，未执行删除')
+    return
+  }
+
+  // 先打印分类概览
+  for (const [category, repos] of Object.entries(grouped)) {
+    if (repos.length > 0)
+      consola.info(`${category}（${repos.length} 个）`)
+  }
+
+  // 所有仓库合并到一个 multiselect，label 前缀标识分类
+  const allChoices: { label: string, value: string, hint: string }[] = []
+  for (const [category, repos] of Object.entries(grouped)) {
+    const icon = category.match(EMOJI_RE)?.[1] || '•'
+    for (const repo of repos) {
+      allChoices.push({
+        label: `${icon} ${colors.bold(repo.name)}`,
+        value: repo.path,
+        hint: formatRepoHint(repo),
+      })
+    }
+  }
+
+  console.log()
+  const selected = await multiselect({
+    message: '选择要删除的仓库（空格选中，回车确认）',
+    options: allChoices,
+  })
+
+  if (isCancel(selected)) {
+    cancel('已取消操作。')
+    process.exit(0)
+  }
+
+  const selectedPaths = selected as string[]
+  if (!selectedPaths || selectedPaths.length === 0) {
+    consola.info('未选择任何仓库，已跳过。')
+    return
+  }
+
+  // 二次确认
+  const reposToDelete = staleRepos.filter(r => selectedPaths.includes(r.path))
+
+  console.log()
+  consola.warn(`即将删除 ${reposToDelete.length} 个仓库:`)
+  for (const repo of reposToDelete) {
+    console.log(`  ${colors.bold(repo.name)}  ${colors.dim(repo.path)}`)
+    console.log(`    ${colors.yellow(formatRepoHint(repo))}`)
+  }
+
+  console.log()
+  const confirmed = await confirm({
+    message: '⚠️  此操作不可恢复！确认删除？',
+    initialValue: false,
+  })
+
+  if (isCancel(confirmed)) {
+    cancel('已取消删除。')
+    process.exit(0)
+  }
+
+  if (!confirmed) {
+    consola.warn('已取消删除。')
+    return
+  }
+
+  // 执行删除
+  let deleted = 0
+  const total = reposToDelete.length
+  for (const repo of reposToDelete) {
+    try {
+      rmSync(repo.path, { recursive: true, force: true })
+      deleted++
+      consola.success(`${colors.dim(`[${deleted}/${total}]`)} 已删除: ${colors.bold(repo.name)}`)
+    }
+    catch (err) {
+      consola.error(`删除失败: ${colors.bold(repo.name)} — ${colors.red((err as Error).message)}`)
+    }
+  }
+
+  console.log()
+  consola.success(`🧹 清理完成，已删除 ${colors.bold(colors.green(String(deleted)))} 个仓库。`)
 }

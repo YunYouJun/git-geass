@@ -11,4 +11,5 @@ node_modules
 temp
 
 # CodeBuddy
+.codebuddy/plans
 .codebuddy/memory

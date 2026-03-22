@@ -17,38 +17,70 @@ const cli = yargs(hideBin(process.argv))
     'clean',
     'clean old branches, for example: gitg clean branch -r -m master',
     (yargs) => {
-      return yargs.command(
-        'branch',
-        'Clean branches',
-        (args) => {
-          return args
-            .options('days', {
-              alias: 'd',
-              type: 'number',
-              description: 'Days ago',
+      return yargs
+        .command(
+          'branch',
+          'Clean branches',
+          (args) => {
+            return args
+              .options('days', {
+                alias: 'd',
+                type: 'number',
+                description: 'Days ago',
+              })
+              .options('merged', {
+                alias: 'm',
+                type: 'array',
+                description: 'Only show merged target branches',
+              })
+              .options('remote', {
+                alias: 'r',
+                type: 'boolean',
+                description: 'Delete remote branches',
+                default: false,
+              })
+          },
+          (argv) => {
+            import('./clean').then((module) => {
+              module.cleanBranches({
+                days: argv.days as number,
+                merged: argv.merged as string[],
+                remote: argv.remote as boolean,
+              })
             })
-            .options('merged', {
-              alias: 'm',
-              type: 'array',
-              description: 'Only show merged target branches',
+          },
+        )
+        .command(
+          'repo [scan-root]',
+          '检测并清理无用的 Git 仓库',
+          (args) => {
+            return args
+              .positional('scan-root', {
+                type: 'string',
+                description: '扫描根目录，默认为当前目录',
+              })
+              .options('days', {
+                alias: 'd',
+                type: 'number',
+                description: '天数阈值（超过该天数未提交视为无用），默认 180',
+                default: 180,
+              })
+              .options('dry-run', {
+                type: 'boolean',
+                description: '仅预览，不执行删除',
+                default: false,
+              })
+          },
+          (argv) => {
+            import('./clean').then((module) => {
+              module.cleanRepos({
+                scanRoot: argv.scanRoot as string | undefined,
+                days: argv.days as number,
+                dryRun: argv.dryRun as boolean,
+              })
             })
-            .options('remote', {
-              alias: 'r',
-              type: 'boolean',
-              description: 'Delete remote branches',
-              default: false,
-            })
-        },
-        (argv) => {
-          import('./clean').then((module) => {
-            module.cleanBranches({
-              days: argv.days as number,
-              merged: argv.merged as string[],
-              remote: argv.remote as boolean,
-            })
-          })
-        },
-      )
+          },
+        )
     },
   )
   .command(

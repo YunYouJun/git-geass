@@ -14,8 +14,8 @@ Some quick **interactive** actions for git.
 
 ```bash
 pnpm i -g git-geass
-# npm i -g git-actions
-# yarn add -g git-actions
+# npm i -g git-geass
+# yarn add -g git-geass
 ```
 
 ## Usage
@@ -71,7 +71,7 @@ gitg amend --author
 
 <p align="center">
   <a href="https://sponsors.yunyoujun.cn">
-    <img src='https://cdn.jsdelivr.net/gh/YunYouJun/sponsors/public/sponsors.svg'/>
+    <img src="https://cdn.jsdelivr.net/gh/YunYouJun/sponsors/public/sponsors.svg" alt="Sponsors"/>
   </a>
 </p>
 

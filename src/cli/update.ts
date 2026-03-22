@@ -1,12 +1,11 @@
 import type { SimpleGit } from 'simple-git'
 import path from 'node:path'
 import process from 'node:process'
+import { cancel, confirm, isCancel, spinner } from '@clack/prompts'
 import consola from 'consola'
 import { colors } from 'consola/utils'
 import fs from 'fs-extra'
 
-import ora from 'ora'
-import prompts from 'prompts'
 import simpleGit, { CleanOptions } from 'simple-git'
 import { git } from '../env'
 
@@ -74,16 +73,18 @@ async function updateRepo(params: {
   name: string
   git: SimpleGit
 }) {
-  const spinner = ora(`${colors.cyan(params.name)}: git pull`).start()
+  const s = spinner()
+  s.start(`${colors.cyan(params.name)}: git pull`)
   try {
     await params.git.pull()
-    spinner.succeed(`${colors.cyan(params.name)}: git pull`)
+    s.stop(`${colors.cyan(params.name)}: git pull`)
   }
   catch (e: any) {
     if (e.message.includes('git pull <remote> <branch>')) {
-      spinner.fail(`${colors.cyan(params.name)} no remote to pull.`)
+      s.stop(`${colors.cyan(params.name)} no remote to pull.`)
     }
     else {
+      s.stop()
       console.error(e.message)
     }
   }
@@ -98,18 +99,16 @@ export async function updateRepos(options: GitgUpdateOptions) {
 
   if (!options.yes) {
     // confirm force clean
-    const results = await prompts({
-      type: 'confirm',
-      name: 'confirm',
+    const shouldUpdate = await confirm({
       message: 'Are you sure to update all git repositories in the current directory?',
-      initial: false,
-    }, {
-      onCancel: () => {
-        consola.warn('User canceled.')
-        process.exit(0)
-      },
+      initialValue: false,
     })
-    if (!results.confirm)
+
+    if (isCancel(shouldUpdate)) {
+      cancel('User canceled.')
+      process.exit(0)
+    }
+    if (!shouldUpdate)
       return
   }
 

@@ -1,9 +1,11 @@
 import type { BranchSummary } from 'simple-git'
 import type { BranchInfo } from '../types'
+import { spinner } from '@clack/prompts'
 import consola from 'consola'
 import { colors } from 'consola/utils'
-import ora from 'ora'
 import { git, GitGeass } from '../env'
+
+export * from './repo'
 
 export function getLocalBranchSummary(): Promise<BranchSummary> {
   return new Promise<BranchSummary>((resolve, reject) => {
@@ -19,9 +21,11 @@ export function getLocalBranchSummary(): Promise<BranchSummary> {
 /**
  * 只有远程才有默认分支
  */
+const HEAD_BRANCH_RE = /HEAD branch: (.*)/
+
 export async function getRemoteDefaultBranch(): Promise<string> {
   const remoteOriginInfo = await git.raw(['remote', 'show', 'origin'])
-  const remoteDefaultBranch = remoteOriginInfo.match(/HEAD branch: (.*)/)?.[1] || GitGeass.defaultBranch
+  const remoteDefaultBranch = remoteOriginInfo.match(HEAD_BRANCH_RE)?.[1] || GitGeass.defaultBranch
   GitGeass.defaultBranch = remoteDefaultBranch
   return remoteDefaultBranch
 }
@@ -30,7 +34,8 @@ export async function getRemoteDefaultBranch(): Promise<string> {
  * 获取远程分支
  */
 export async function getRemoteBranches(): Promise<BranchInfo[]> {
-  const spinner = ora('Loading remote branches info...').start()
+  const s = spinner()
+  s.start('Loading remote branches info...')
   // consola.start('Loading remote branches info...')
 
   // const bar = new cliProgress.SingleBar({
@@ -73,12 +78,12 @@ export async function getRemoteBranches(): Promise<BranchInfo[]> {
     // 过滤无效日期
     branchInfoArr = branchInfoArr.filter(item => !Number.isNaN(item.latestCommitDate.valueOf()))
 
-    spinner.succeed(`Remote ${colors.gray('branches info loaded.')}`)
+    s.stop(`Remote ${colors.gray('branches info loaded.')}`)
     consola.info(remoteBranchText)
     // consola.success('Remote branches info loaded.')
   }
   else {
-    spinner.succeed(`Remote branch ${colors.green(GitGeass.defaultBranch)}${colors.gray('(default)')} is ignored.` + ' ' + 'No other remote branches.')
+    s.stop(`Remote branch ${colors.green(GitGeass.defaultBranch)}${colors.gray('(default)')} is ignored.` + ' ' + 'No other remote branches.')
     // consola.success('No remote branches.')
   }
 
