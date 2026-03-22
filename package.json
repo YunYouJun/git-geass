@@ -1,7 +1,7 @@
 {
   "name": "git-geass",
   "type": "module",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "packageManager": "pnpm@10.32.1",
   "description": "🛠️ Some quick actions for git.",
   "author": "YunYouJun <me@yunyoujun.cn>",
@@ -52,7 +52,7 @@
     "prepare": "simple-git-hooks"
   },
   "dependencies": {
-    "@clack/prompts": "^1.0.1",
+    "@clack/prompts": "^1.1.0",
     "c12": "^3.3.3",
     "cilicili": "^0.1.1",
     "cli-progress": "^3.12.0",
@@ -71,7 +71,7 @@
     "@types/node": "^22.19.15",
     "@types/yargs": "^17.0.35",
     "bumpp": "^11.0.1",
-    "eslint": "^10.0.3",
+    "eslint": "^10.1.0",
     "lint-staged": "^16.4.0",
     "pnpm": "^10.32.1",
     "simple-git-hooks": "^2.13.1",
