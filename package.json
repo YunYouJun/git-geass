@@ -1,7 +1,7 @@
 {
   "name": "git-geass",
   "type": "module",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "packageManager": "pnpm@10.32.1",
   "description": "🛠️ Some quick actions for git.",
   "author": "YunYouJun <me@yunyoujun.cn>",
@@ -45,7 +45,7 @@
     "dev": "unbuild --stub",
     "lint": "eslint .",
     "prepublishOnly": "nr build",
-    "release": "bumpp --all && npm publish",
+    "release": "bumpp --all",
     "start": "tsx src/run.ts",
     "test": "vitest",
     "typecheck": "tsc --noEmit",
