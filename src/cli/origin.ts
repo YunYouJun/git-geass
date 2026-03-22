@@ -3,8 +3,8 @@ import consola from 'consola'
 import { colors } from 'consola/utils'
 import { git } from '../env'
 
-// HTTPS: https://github.com/owner/repo.git
-const HTTPS_URL_RE = /^https?:\/\/([^/]+)\/([^/]+)\/(.+?)(?:\.git)?$/
+// HTTPS: https://github.com/owner/repo.git (optionally with userinfo@)
+const HTTPS_URL_RE = /^https?:\/\/(?:[^/@]+@)?([^/]+)\/([^/]+)\/(.+?)(?:\.git)?$/
 // SSH: git@github.com:owner/repo.git
 const SSH_URL_RE = /^git@([^:]+):([^/]+)\/(.+?)(?:\.git)?$/
 
@@ -53,8 +53,16 @@ export interface OriginOptions {
 export async function toggleOrigin(options: OriginOptions = {}): Promise<void> {
   const remoteName = options.remote || 'origin'
 
-  // Get current remote URL
-  const remotes = await git.getRemotes(true)
+  let remotes
+  try {
+    remotes = await git.getRemotes(true)
+  }
+  catch (err) {
+    consola.error('Failed to get remotes. Make sure you are inside a Git repository.')
+    consola.error(String(err))
+    return
+  }
+
   const remote = remotes.find(r => r.name === remoteName)
 
   if (!remote) {
@@ -107,6 +115,25 @@ export async function toggleOrigin(options: OriginOptions = {}): Promise<void> {
   }
 
   const newUrl = convertRemoteUrl(currentUrl, targetProtocol)
-  await git.remote(['set-url', remoteName, newUrl])
-  consola.success(`${colors.cyan(remoteName)}: ${colors.gray(currentUrl)} → ${colors.green(newUrl)}`)
+
+  try {
+    // Update fetch URL
+    await git.remote(['set-url', remoteName, newUrl])
+
+    // Also update push URL if it differs from fetch URL
+    const pushUrl = remote.refs.push
+    if (pushUrl && pushUrl !== currentUrl) {
+      const newPushUrl = convertRemoteUrl(pushUrl, targetProtocol)
+      await git.remote(['set-url', '--push', remoteName, newPushUrl])
+      consola.success(`${colors.cyan(remoteName)} (fetch): ${colors.gray(currentUrl)} → ${colors.green(newUrl)}`)
+      consola.success(`${colors.cyan(remoteName)} (push):  ${colors.gray(pushUrl)} → ${colors.green(newPushUrl)}`)
+    }
+    else {
+      consola.success(`${colors.cyan(remoteName)}: ${colors.gray(currentUrl)} → ${colors.green(newUrl)}`)
+    }
+  }
+  catch (err) {
+    consola.error('Failed to update remote URL.')
+    consola.error(String(err))
+  }
 }

@@ -53,6 +53,16 @@ describe('origin', () => {
       })
     })
 
+    it('should parse HTTPS URL with userinfo (strip credentials)', () => {
+      const result = parseRemoteUrl('https://username@bitbucket.org/team/repo.git')
+      expect(result).toEqual({
+        type: 'https',
+        host: 'bitbucket.org',
+        owner: 'team',
+        repo: 'repo',
+      })
+    })
+
     it('should return unknown for invalid URLs', () => {
       const result = parseRemoteUrl('not-a-valid-url')
       expect(result.type).toBe('unknown')

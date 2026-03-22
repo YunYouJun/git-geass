@@ -24,12 +24,12 @@ jobs:
           registry-url: https://registry.npmjs.org/
 
       # NPM_CONFIG_PROVENANCE is required for open-source projects
-      - run: pnpm install
-      - name: Publish to npm
-        run: pnpm publish --access public --no-git-checks
-        env:
-          NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
-          NPM_CONFIG_PROVENANCE: true
+      # - run: pnpm install
+      # - name: Publish to npm
+      #   run: pnpm publish --access public --no-git-checks
+      #   env:
+      #     NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
+      #     NPM_CONFIG_PROVENANCE: true
 
       - name: Create GitHub Release
         run: pnpm dlx changelogithub
