@@ -120,7 +120,6 @@ export function inferRepoName(repoDir: string, scanRoot: string): string {
     // 匹配各种 git remote 格式：
     // https://github.com/user/repo.git → user/repo
     // git@github.com:user/repo.git → user/repo
-    // https://git.woa.com/user/repo.git → user/repo
     const match = remote.match(REMOTE_PATH_RE)
     if (match)
       return match[1]
