@@ -1,5 +1,5 @@
-import type { RepoHealth } from '../types'
-import { exec, execSync } from 'node:child_process'
+import type { RepoHealth, RepoInfo } from '../types'
+import { exec } from 'node:child_process'
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { basename, join } from 'node:path'
 import { promisify } from 'node:util'
@@ -108,24 +108,14 @@ async function execSafe(cmd: string, cwd: string): Promise<string> {
 /**
  * 从 git remote URL 或相对路径推断仓库名称
  */
-export function inferRepoName(repoDir: string, scanRoot: string): string {
-  // 尝试从 git remote 提取仓库名
-  try {
-    const remote = execSync('git remote get-url origin', {
-      cwd: repoDir,
-      encoding: 'utf-8',
-      stdio: ['pipe', 'pipe', 'pipe'],
-    }).trim()
-
+export function inferRepoName(repoDir: string, scanRoot: string, remoteUrl?: string | null): string {
+  if (remoteUrl) {
     // 匹配各种 git remote 格式：
     // https://github.com/user/repo.git → user/repo
     // git@github.com:user/repo.git → user/repo
-    const match = remote.match(REMOTE_PATH_RE)
+    const match = remoteUrl.match(REMOTE_PATH_RE)
     if (match)
       return match[1]
-  }
-  catch {
-    // fallback
   }
 
   // fallback: 用相对于 scanRoot 的路径
@@ -142,16 +132,16 @@ export async function analyzeRepoHealth(
   scanRoot: string,
   staleDays: number = DEFAULT_STALE_DAYS,
 ): Promise<RepoHealth> {
-  const name = inferRepoName(repoDir, scanRoot)
   const reasons: string[] = []
 
   // 并发获取所有信息
   const [remoteOutput, commitCount, lastDateStr] = await Promise.all([
-    execSafe('git remote get-url origin 2>/dev/null || git remote 2>/dev/null', repoDir),
+    execSafe('git remote get-url origin 2>/dev/null', repoDir),
     execSafe('git rev-list --all --count 2>/dev/null', repoDir),
     execSafe('git log -1 --all --format=%aI 2>/dev/null', repoDir),
   ])
 
+  const name = inferRepoName(repoDir, scanRoot, remoteOutput)
   const hasRemote = remoteOutput.length > 0
   const totalCommits = Number.parseInt(commitCount, 10) || 0
 
@@ -234,4 +224,72 @@ export async function findStaleRepos(
   })
 
   return stale
+}
+
+// ============ 仓库信息采集（面向 open 命令） ============
+
+/**
+ * 采集单个仓库的导航信息
+ * 并发执行多个 git 命令，充分利用 I/O 并行
+ */
+async function collectSingleRepoInfo(
+  repoDir: string,
+  scanRoot: string,
+): Promise<RepoInfo> {
+  const [branch, remoteUrl, statusOutput, lastDateStr] = await Promise.all([
+    execSafe('git branch --show-current', repoDir),
+    execSafe('git remote get-url origin', repoDir),
+    execSafe('git status --porcelain', repoDir),
+    execSafe('git log -1 --all --format=%aI', repoDir),
+  ])
+
+  const name = inferRepoName(repoDir, scanRoot, remoteUrl)
+
+  let lastCommitDate: string | null = null
+  let daysSinceLastCommit: number | null = null
+  if (lastDateStr) {
+    lastCommitDate = lastDateStr
+    const lastDate = new Date(lastDateStr)
+    daysSinceLastCommit = Math.floor((Date.now() - lastDate.getTime()) / 86400000)
+  }
+
+  return {
+    path: repoDir,
+    name,
+    branch: branch || null,
+    remoteUrl: remoteUrl || null,
+    isDirty: statusOutput.length > 0,
+    lastCommitDate,
+    daysSinceLastCommit,
+  }
+}
+
+/**
+ * 并发采集多个仓库的导航信息
+ *
+ * @param repoPaths 仓库路径列表
+ * @param scanRoot 扫描根目录（用于推断仓库名）
+ * @param onProgress 进度回调 (已完成数, 总数)
+ */
+export async function collectRepoInfos(
+  repoPaths: string[],
+  scanRoot: string,
+  onProgress?: (done: number, total: number) => void,
+): Promise<RepoInfo[]> {
+  const total = repoPaths.length
+  let done = 0
+
+  const results = await Promise.all(
+    repoPaths.map(async (repoDir) => {
+      const info = await collectSingleRepoInfo(repoDir, scanRoot)
+      done++
+      onProgress?.(done, total)
+      return info
+    }),
+  )
+
+  // 按名称排序，方便浏览
+  results.sort((a, b) => a.name.localeCompare(b.name))
+
+  return results
 }

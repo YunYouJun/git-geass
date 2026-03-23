@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { convertRemoteUrl, parseRemoteUrl } from '../src/cli/origin'
+import { convertRemoteUrl, parseRemoteUrl } from '../src/utils/remote'
 
 describe('origin', () => {
   describe('parseRemoteUrl', () => {

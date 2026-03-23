@@ -5,6 +5,7 @@ import consola from 'consola'
 import { colors } from 'consola/utils'
 import { git, GitGeass } from '../env'
 
+export * from './remote'
 export * from './repo'
 
 export function getLocalBranchSummary(): Promise<BranchSummary> {

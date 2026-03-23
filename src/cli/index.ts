@@ -5,6 +5,7 @@ import { hideBin } from 'yargs/helpers'
 import { version } from '../../package.json'
 
 export * from './clean'
+export * from './open'
 export * from './origin'
 export * from './update'
 
@@ -102,6 +103,47 @@ const cli = yargs(hideBin(process.argv))
           default: false,
         }),
     argv => import('./update').then(module => module.default(argv)),
+  )
+  // open: navigate and open git repos
+  .command(
+    'open [scan-root]',
+    'Scan, browse and open git repositories',
+    args =>
+      args
+        .positional('scan-root', {
+          type: 'string',
+          description: 'Root directory to scan for repos (default: cwd)',
+        })
+        .options('editor', {
+          alias: 'e',
+          type: 'string',
+          description: 'Editor to open with (default: $EDITOR or code)',
+        })
+        .options('browser', {
+          alias: 'b',
+          type: 'boolean',
+          description: 'Open remote repository URL in browser',
+          default: false,
+        })
+        .options('shell', {
+          alias: 's',
+          type: 'boolean',
+          description: 'Output cd command for shell eval',
+          default: false,
+        })
+        .options('info', {
+          alias: 'i',
+          type: 'boolean',
+          description: 'Display detailed info for all repos',
+          default: false,
+        }),
+    argv => import('./open').then(module => module.openRepo({
+      scanRoot: argv.scanRoot as string | undefined,
+      editor: argv.editor as string | undefined,
+      browser: argv.browser as boolean,
+      shell: argv.shell as boolean,
+      info: argv.info as boolean,
+    })),
   )
   // origin protocol toggle
   .command(

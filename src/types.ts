@@ -21,3 +21,21 @@ export interface RepoHealth {
   /** 判定为无用的原因列表 */
   reasons: string[]
 }
+
+/** 仓库导航信息（面向 open 命令场景） */
+export interface RepoInfo {
+  /** 仓库绝对路径 */
+  path: string
+  /** 仓库显示名（owner/repo 或相对路径） */
+  name: string
+  /** 当前分支名 */
+  branch: string | null
+  /** remote origin URL（原始格式） */
+  remoteUrl: string | null
+  /** 工作区是否有未提交更改 */
+  isDirty: boolean
+  /** 最后提交日期（ISO 格式） */
+  lastCommitDate: string | null
+  /** 距今天数 */
+  daysSinceLastCommit: number | null
+}
