@@ -1,5 +1,6 @@
 import type { RepoInfo } from '../types'
 import { spawn } from 'node:child_process'
+import { resolve } from 'node:path'
 import process from 'node:process'
 import { cancel, isCancel, select, spinner } from '@clack/prompts'
 import consola from 'consola'
@@ -11,6 +12,7 @@ import { collectRepoInfos, discoverRepos } from '../utils/repo'
 export interface OpenOptions {
   scanRoot?: string
   editor?: string
+  /** Browser is now the default action; retained for existing callers. */
   browser?: boolean
   shell?: boolean
   info?: boolean
@@ -177,13 +179,13 @@ function printRepoInfos(repos: RepoInfo[]): void {
  * gitg open 命令主入口
  */
 export async function openRepo(options: OpenOptions = {}): Promise<void> {
-  const scanRoot = options.scanRoot || process.cwd()
+  const scanRoot = resolve(options.scanRoot || '.')
 
   // 1. 扫描仓库
   const s = spinner()
   s.start(`Scanning git repos in ${colors.cyan(scanRoot)}...`)
 
-  const repoPaths = discoverRepos(scanRoot)
+  const repoPaths = discoverRepos(scanRoot, { includeRoot: true })
 
   if (repoPaths.length === 0) {
     s.stop(colors.yellow('No git repositories found.'))
@@ -202,14 +204,16 @@ export async function openRepo(options: OpenOptions = {}): Promise<void> {
   }
 
   // 4. 交互式选择仓库
-  const selected = await select({
-    message: 'Select a repository:',
-    options: repos.map(repo => ({
-      value: repo,
-      label: formatRepoLabel(repo),
-      hint: colors.gray(repo.path),
-    })),
-  })
+  const selected = repos.length === 1
+    ? repos[0]
+    : await select({
+        message: 'Select a repository:',
+        options: repos.map(repo => ({
+          value: repo,
+          label: formatRepoLabel(repo),
+          hint: colors.gray(repo.path),
+        })),
+      })
 
   if (isCancel(selected)) {
     cancel('Operation cancelled.')
@@ -219,35 +223,14 @@ export async function openRepo(options: OpenOptions = {}): Promise<void> {
   const repo = selected as RepoInfo
 
   // 5. 根据模式执行操作
-  if (options.browser) {
-    // --browser: 在浏览器打开远程仓库
-    if (!repo.remoteUrl) {
-      consola.warn(`Repository ${colors.green(repo.name)} has no remote URL.`)
-      return
-    }
-
-    const url = buildBrowserUrl(repo.remoteUrl)
-    if (!url) {
-      consola.warn(`Cannot parse remote URL: ${colors.yellow(repo.remoteUrl)}`)
-      return
-    }
-
-    const openCmd = getSystemOpenCommand()
-    consola.info(`Opening ${colors.cyan(url)} in browser...`)
-
-    try {
-      await launchCommand({ command: openCmd, args: [url] })
-    }
-    catch (error) {
-      consola.error(`Failed to open browser: ${error instanceof Error ? error.message : String(error)}`)
-    }
-  }
-  else if (options.shell) {
+  if (options.shell) {
     // --shell: 输出 cd 命令（直接用 console.log，避免 consola 前缀干扰 eval）
     console.log(`cd ${quoteForShell(repo.path)}`)
+    return
   }
-  else {
-    // 默认: 用编辑器打开
+
+  if (options.editor) {
+    // --editor: 用指定编辑器打开仓库路径
     const editor = resolveEditor(options.editor)
     consola.info(`Opening ${colors.green(repo.name)} with ${colors.cyan(editor)}...`)
 
@@ -261,5 +244,28 @@ export async function openRepo(options: OpenOptions = {}): Promise<void> {
     catch (error) {
       consola.error(`Failed to open editor: ${error instanceof Error ? error.message : String(error)}`)
     }
+    return
+  }
+
+  // 默认 / --browser: 在浏览器打开远程仓库
+  if (!repo.remoteUrl) {
+    consola.warn(`Repository ${colors.green(repo.name)} has no remote URL.`)
+    return
+  }
+
+  const url = buildBrowserUrl(repo.remoteUrl)
+  if (!url) {
+    consola.warn(`Cannot parse remote URL: ${colors.yellow(repo.remoteUrl)}`)
+    return
+  }
+
+  const openCmd = getSystemOpenCommand()
+  consola.info(`Opening ${colors.cyan(url)} in browser...`)
+
+  try {
+    await launchCommand({ command: openCmd, args: [url] })
+  }
+  catch (error) {
+    consola.error(`Failed to open browser: ${error instanceof Error ? error.message : String(error)}`)
   }
 }

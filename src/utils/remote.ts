@@ -1,7 +1,9 @@
 // HTTPS: https://github.com/owner/repo.git (optionally with userinfo@)
 const HTTPS_URL_RE = /^https?:\/\/(?:[^/@]+@)?([^/]+)\/([^/]+)\/(.+?)(?:\.git)?$/
-// SSH: git@github.com:owner/repo.git
-const SSH_URL_RE = /^git@([^:]+):([^/]+)\/(.+?)(?:\.git)?$/
+// SSH scp-like: git@github.com:owner/repo.git
+const SSH_SCP_URL_RE = /^[^@/:]+@([^:]+):([^/]+)\/(.+?)(?:\.git)?$/
+// SSH scheme: ssh://git@github.com[:22]/owner/repo.git
+const SSH_SCHEME_URL_RE = /^ssh:\/\/(?:[^/@]+@)?([^/:]+)(?::\d+)?\/([^/]+)\/(.+?)(?:\.git)?$/
 
 /**
  * Parse remote URL and determine its protocol type
@@ -12,7 +14,7 @@ export function parseRemoteUrl(url: string): { type: 'https' | 'ssh' | 'unknown'
     return { type: 'https', host: httpsMatch[1], owner: httpsMatch[2], repo: httpsMatch[3] }
   }
 
-  const sshMatch = url.match(SSH_URL_RE)
+  const sshMatch = url.match(SSH_SCP_URL_RE) || url.match(SSH_SCHEME_URL_RE)
   if (sshMatch) {
     return { type: 'ssh', host: sshMatch[1], owner: sshMatch[2], repo: sshMatch[3] }
   }

@@ -23,6 +23,16 @@ describe('remote', () => {
       expect(result).toBe('https://github.com/YunYouJun/git-geass')
     })
 
+    it('should handle SSH URL with ssh scheme', () => {
+      const result = buildBrowserUrl('ssh://git@github.com/YunYouJun/git-geass.git')
+      expect(result).toBe('https://github.com/YunYouJun/git-geass')
+    })
+
+    it('should handle SSH URL with custom user and port', () => {
+      const result = buildBrowserUrl('ssh://deploy@git.example.com:2222/org/my-project.git')
+      expect(result).toBe('https://git.example.com/org/my-project')
+    })
+
     it('should work with GitLab URLs', () => {
       const result = buildBrowserUrl('git@gitlab.com:team/project.git')
       expect(result).toBe('https://gitlab.com/team/project')

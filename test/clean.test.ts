@@ -5,11 +5,20 @@ import simpleGit from 'simple-git'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { config } from './config'
 
-const git = simpleGit(path.resolve(__dirname, './fixtures/git-repo'))
+const gitgCleanDir = path.resolve(config.tempDir, 'gitg-clean')
+let git: ReturnType<typeof simpleGit>
 
 describe('should', () => {
   beforeAll(async () => {
-    await fs.copy(config.gitRepoDir, path.resolve(config.tempDir, 'gitg-clean'))
+    await fs.emptyDir(gitgCleanDir)
+    await fs.copy(config.gitRepoDir, gitgCleanDir)
+
+    git = simpleGit(gitgCleanDir)
+    await git.init()
+    await git.addConfig('user.name', 'Git Geass Test')
+    await git.addConfig('user.email', 'git-geass@example.com')
+    await git.add('.')
+    await git.commit('initial commit')
   })
 
   it('create local branches', async () => {

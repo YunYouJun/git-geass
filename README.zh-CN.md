@@ -87,6 +87,31 @@ gitg update -r
 gitg update -f -r
 ```
 
+### Open Repo
+
+在浏览器中打开 Git 仓库对应的远程 URL。`gitg open` 默认等价于 `gitg open .`。
+支持 HTTPS、`git@host:owner/repo.git` 与 `ssh://user@host/owner/repo.git` 形式的 remote。
+
+```bash
+# 打开当前仓库的远程 URL
+gitg open
+
+# 同上
+gitg open .
+
+# 扫描指定目录并选择仓库
+gitg open /path/to/repos
+
+# 仅展示仓库详情，不打开
+gitg open --info
+
+# 显式使用浏览器模式（与默认行为相同）
+gitg open --browser
+
+# 使用指定编辑器打开仓库路径
+gitg open --editor code
+```
+
 ### Amend Date
 
 修改最后一次提交的作者日期和提交者日期。

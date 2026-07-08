@@ -20,6 +20,11 @@ const MAX_SCAN_DEPTH = 10
 /** 仓库被判定为"无用"的默认天数阈值（180 天 ≈ 半年无提交） */
 export const DEFAULT_STALE_DAYS = 180
 
+interface DiscoverReposOptions {
+  /** 是否将 scanRoot 本身作为候选 Git 仓库 */
+  includeRoot?: boolean
+}
+
 // ============ Git 仓库发现 ============
 
 /**
@@ -53,8 +58,9 @@ export function isValidGitRepo(dir: string): boolean {
  * 遇到合法 .git 即停止深入（不扫描 submodule），最多递归 {@link MAX_SCAN_DEPTH} 层
  * 如果 .git 存在但损坏（缺少 HEAD 等），会跳过该目录并继续递归子目录
  */
-export function discoverRepos(scanRoot: string): string[] {
+export function discoverRepos(scanRoot: string, options: DiscoverReposOptions = {}): string[] {
   const repos: string[] = []
+  const includeRoot = options.includeRoot ?? false
 
   if (!existsSync(scanRoot)) {
     return repos
@@ -64,7 +70,7 @@ export function discoverRepos(scanRoot: string): string[] {
     if (depth > MAX_SCAN_DEPTH)
       return
 
-    if (!isRoot && isValidGitRepo(dir)) {
+    if ((!isRoot || includeRoot) && isValidGitRepo(dir)) {
       repos.push(dir)
       // 找到合法 .git 后不再递归子目录（避免 submodule 干扰）
       return

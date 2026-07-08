@@ -107,23 +107,22 @@ const cli = yargs(hideBin(process.argv))
   // open: navigate and open git repos
   .command(
     'open [scan-root]',
-    'Scan, browse and open git repositories',
+    'Scan git repositories and open remote URL',
     args =>
       args
         .positional('scan-root', {
           type: 'string',
-          description: 'Root directory to scan for repos (default: cwd)',
+          description: 'Root directory to scan for repos (default: .)',
         })
         .options('editor', {
           alias: 'e',
           type: 'string',
-          description: 'Editor to open with (default: $EDITOR or code)',
+          description: 'Open with editor instead of browser',
         })
         .options('browser', {
           alias: 'b',
           type: 'boolean',
-          description: 'Open remote repository URL in browser',
-          default: false,
+          description: 'Open remote repository URL in browser (default action)',
         })
         .options('shell', {
           alias: 's',
@@ -140,7 +139,7 @@ const cli = yargs(hideBin(process.argv))
     argv => import('./open').then(module => module.openRepo({
       scanRoot: argv.scanRoot as string | undefined,
       editor: argv.editor as string | undefined,
-      browser: argv.browser as boolean,
+      browser: argv.browser as boolean | undefined,
       shell: argv.shell as boolean,
       info: argv.info as boolean,
     })),

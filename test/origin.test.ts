@@ -43,6 +43,26 @@ describe('origin', () => {
       })
     })
 
+    it('should parse SSH URL with ssh scheme', () => {
+      const result = parseRemoteUrl('ssh://git@github.com/YunYouJun/git-geass.git')
+      expect(result).toEqual({
+        type: 'ssh',
+        host: 'github.com',
+        owner: 'YunYouJun',
+        repo: 'git-geass',
+      })
+    })
+
+    it('should parse SSH URL with custom user and port', () => {
+      const result = parseRemoteUrl('ssh://deploy@git.example.com:2222/org/my-project.git')
+      expect(result).toEqual({
+        type: 'ssh',
+        host: 'git.example.com',
+        owner: 'org',
+        repo: 'my-project',
+      })
+    })
+
     it('should handle custom hosts', () => {
       const result = parseRemoteUrl('git@gitlab.com:team/project.git')
       expect(result).toEqual({
@@ -77,6 +97,11 @@ describe('origin', () => {
 
     it('should convert SSH to HTTPS', () => {
       const result = convertRemoteUrl('git@github.com:YunYouJun/git-geass.git', 'https')
+      expect(result).toBe('https://github.com/YunYouJun/git-geass.git')
+    })
+
+    it('should convert SSH scheme URL to HTTPS', () => {
+      const result = convertRemoteUrl('ssh://git@github.com/YunYouJun/git-geass.git', 'https')
       expect(result).toBe('https://github.com/YunYouJun/git-geass.git')
     })
 

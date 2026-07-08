@@ -87,6 +87,31 @@ gitg update -r
 gitg update -f -r
 ```
 
+### Open Repo
+
+Open a Git repository's remote URL in your browser. `gitg open` defaults to `gitg open .`.
+HTTPS, `git@host:owner/repo.git`, and `ssh://user@host/owner/repo.git` remotes are supported.
+
+```bash
+# open current repo remote URL
+gitg open
+
+# same as above
+gitg open .
+
+# scan a specific directory and choose a repo
+gitg open /path/to/repos
+
+# show repository details without opening
+gitg open --info
+
+# explicit browser mode (same as default)
+gitg open --browser
+
+# open the repo path with a specific editor
+gitg open --editor code
+```
+
 ### Amend Date
 
 Modify the last commit's author date and committer date.
